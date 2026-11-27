@@ -1,0 +1,35 @@
+name: publish-game
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Download URL of the built index.html
+        required: true
+      sha256:
+        description: Expected sha256 of index.html
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download game
+        env:
+          GAME_URL: ${{ inputs.url }}
+          GAME_SHA: ${{ inputs.sha256 }}
+        run: |
+          curl -fsSL -o index.html "$GAME_URL"
+          echo "$GAME_SHA  index.html" | sha256sum -c -
+          touch .nojekyll
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .nojekyll
+          git commit -m "Add game (index.html)" || echo "nothing to commit"
+          git push origin HEAD:main
